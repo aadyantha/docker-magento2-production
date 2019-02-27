@@ -1,10 +1,10 @@
-version: '2'
+version: '3'
 
 services:
 
-  proxy:
+  nginx_server:
     image: jwilder/nginx-proxy
-    container_name: proxy
+    container_name: nginx_proxy
     restart: unless-stopped
     labels:
       com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy: "true"
@@ -26,14 +26,121 @@ services:
     container_name: letsencrypt
     restart: unless-stopped
     environment:
-      - NGINX_PROXY_CONTAINER=proxy
+      - NGINX_PROXY_CONTAINER=nginx_proxy
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-    volumes_from:
-      - "proxy"
+    volumes:
+      - nginx_proxy
     depends_on:
-      - "proxy"
+      - nginx_proxy
+    links:
+      - nginx_proxy
     networks:
       - "default"
       - "proxy-tier"
+      
+  redis_server:
+    image: fballiano/redis-volatile
+    restart: unless-stopped
+    container_name: redis
+    depends_on:
+      - apache2_server
+      - varnish_server
+      - database_server
+    links:
+      - apache2_server
+      - database_server
+    ports:
+      - "6379:6379"
+    
+  clusterdata:
+    image: fballiano/redis-volatile
+      
+  varnish_server:
+    image: fballiano/varnish
+    restart: unless-stopped
+    container_name: varnish
+    depends_on:
+      - apache2_server
+    volumes:
+      - ./varnish.vcl:/etc/varnish/default.vcl
+      - ./varnish.secret:/etc/varnish/secret
+    environment:
+      - CACHE_SIZE=256M
+    ports:
+      - "6081:6081"
+      - "6082:6082"
+    links:
+      - apache2_server
+      - database_server
 
+  apache2_server:
+    build:
+      context: ./apache2_server/
+    restart: unless-stopped
+    container_name: apache2-php
+    depends_on:
+      - database_server
+      - cache
+      - clusterdata
+    links:
+      - database_server
+      - cache
+      - clusterdata
+    volumes:
+      - ./magento2:/var/www/html
+      - ~/.composer/auth.json:/root/.composer/auth.json
+      # Enable the next line if you want to add a custom php.ini
+      #- ./php.ini:/usr/local/etc/php/conf.d/999-customphp.ini
+  
+  database_server:
+    image: mysql:5.7
+    restart: always
+    container_name: database
+    ports:
+      - "3306:3306"
+    volumes:
+      - dbdata:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=magento2
+      - MYSQL_DATABASE=magento2
+      - MYSQL_USER=magento2
+      - MYSQL_PASSWORD=magento2
+      
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    restart: unless-stopped
+    container_name: phpmyadmin
+    depends_on:
+      - database_server
+    environment:
+     - PMA_ARBITRARY=1
+    ports:
+     - 8090:80
+    links:
+      - database_server
+    volumes:
+     - /sessions 
+  
+  portainer:
+    image: portainer/portainer
+    container_name: portainer
+    restart: always
+    environment:
+      - VIRTUAL_HOST=portainer.DOMAIN.TLD
+      - LETSENCRYPT_HOST=portainer.DOMAIN.TLD
+      - LETSENCRYPT_EMAIL=EMAIL
+    volumes:
+      - ./portainer/:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "9000:9000"
+
+volumes:
+  certs:
+  vhost.d:
+  html:
+  dbdata:
+
+networks:
+  proxy-tier:
