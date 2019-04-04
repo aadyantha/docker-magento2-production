@@ -17,4 +17,8 @@ Our goal is to build a Magento2 Docker infrastructure with <strong>One Container
  <li>Container 8: Redis (for Magento's cache) </li>
  <li>Container 9: Elasticsearch</li>
  <li>Container 10: MailHog (SMTP Server)</li>
+ <li>Container 11: Portainer (Optional Docker UI for managing Docker from browser). 
 </ul>
+
+This architecture makes it easy for cluster management and container orchestration services such as Docker Swarmmode or Kubernetes. 
+You are welcome to use the prebuilt images or build the images locally. Two Separate docker-compose.yml files are availble for this.
