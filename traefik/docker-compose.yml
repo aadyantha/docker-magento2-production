@@ -1,0 +1,25 @@
+version: '3'
+
+services:
+  reverse-proxy:
+     image: traefik
+     command: --api --docker
+     command: --configFile=/traefik.toml
+     networks:
+        - web
+     ports:
+        - "80:80"
+        - "443:443"
+     labels:
+        - traefik.enable=true
+        - traefik.frontend.rule=Host:traefik.domain.com # provide your domain after traefik.***.com
+        - traefik.port=8080
+        - traefik.docker.network=web
+#        - traefik.frontend.auth.basic=admin:$$apr1$$UcxpPkcC$$aCvQz87xsCykOyBX4wXDR1
+     volumes:
+        - /var/run/docker.sock:/var/run/docker.sock # So that Traefik can listen to the Docker events
+        - ./traefik.toml:/traefik.toml
+        - ./acme.json:/acme.json
+networks:
+   web:
+        external: true
