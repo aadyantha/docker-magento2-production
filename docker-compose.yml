@@ -38,7 +38,13 @@ services:
     networks:
       - "default"
       - "proxy-tier"
-      
+ 
+  elasticsearch:
+    build: elasticsearch
+    env_file: ${PROJECT_LOCATION}/docker/local/.env
+    volumes:
+      - elasticsearch:/usr/share/elasticsearch/data
+   
   redis_server:
     image: fballiano/redis-volatile
     restart: unless-stopped
