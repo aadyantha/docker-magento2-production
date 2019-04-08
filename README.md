@@ -10,7 +10,7 @@ Our goal is to build a Magento2 Docker infrastructure with <strong>One Container
  <li>Container 1: Traefik (For reverse proxy and Letsencryt SSL)</li>
  <li>Container 2: Apache 2.4 + PHP 7.2 (modphp)</li>
  <li>Container 3: Mysql Database</li>
- <li>Container 4: Databse backup</li>
+ <li>Container 4: RabbitMQ</li>
  <li>Container 5: Cron</li>
  <li>Container 6: Varnish 4.1</li>
  <li>Container 7: Redis (for autodiscovery cluster nodes)</li>
